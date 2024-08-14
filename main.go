@@ -1,7 +1,9 @@
 package main
 
 import (
+	"bytes"
 	"context"
+	"crypto/tls"
 	"encoding/json"
 	"fmt"
 	"log"
@@ -17,8 +19,15 @@ import (
 	"github.com/gotd/td/tg"
 )
 
-const phone = "+79991234567"
-const YM_token = "y0_abcdef"
+const (
+	// номер телефона в формате +79991231212
+	phone    = ""
+	YM_token = ""
+)
+
+const header = "OAuth " + YM_token
+
+var client = new(http.Client)
 
 func worker(parent context.Context) {
 	var trackid string
@@ -97,6 +106,34 @@ func worker(parent context.Context) {
 }
 
 func main() {
+	// ya captcha bypass
+	mTLSConfig := &tls.Config{
+		CipherSuites: []uint16{
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_CHACHA20_POLY1305_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256,
+			tls.TLS_ECDHE_ECDSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_RSA_WITH_AES_256_GCM_SHA384,
+			tls.TLS_ECDHE_ECDSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_CHACHA20_POLY1305,
+			tls.TLS_ECDHE_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+			tls.TLS_AES_128_GCM_SHA256,
+			tls.TLS_AES_256_GCM_SHA384,
+			tls.TLS_RSA_WITH_AES_128_CBC_SHA,
+			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
+		},
+	}
+	mTLSConfig.MinVersion = tls.VersionTLS12
+	mTLSConfig.MaxVersion = tls.VersionTLS12
+
+	tr := &http.Transport{
+		TLSClientConfig: mTLSConfig,
+	}
+	client.Transport = tr
+
 	interrupt := make(chan os.Signal, 1)
 	signal.Notify(interrupt, os.Interrupt)
 	// костыль от падения интернета x2
@@ -121,16 +158,30 @@ func main() {
 
 // информация о треке
 func trackdata(trackid string) (string, error) {
-	client := new(http.Client)
-	req, _ := http.NewRequest("GET", "https://api.music.yandex.ru/tracks/"+trackid, nil)
-	req.Header.Add("Authorization", "OAuth "+YM_token)
+	req, err := http.NewRequest("GET", "https://api.music.yandex.ru/tracks/"+trackid, nil)
+	if err != nil {
+		return "", err
+	}
+	req.Header.Add("Authorization", header)
+	req.Header.Add("x-Yandex-Music-Client", "YandexMusicAndroid/24024312")
+	req.Header.Add("Accept", "application/json")
+	req.Header.Add("User-Agent", "okhttp/4.12.0")
 	resp, err := client.Do(req)
 	if err != nil {
 		return "", err
 	}
 	defer resp.Body.Close()
+	if resp.StatusCode != 200 {
+		bf := new(bytes.Buffer)
+		defer bf.Reset()
+		bf.ReadFrom(resp.Body)
+		return "", fmt.Errorf("%d %s", resp.StatusCode, bf.String())
+	}
 	data := new(trackresponse)
-	json.NewDecoder(resp.Body).Decode(data)
+	err = json.NewDecoder(resp.Body).Decode(data)
+	if err != nil {
+		return "", err
+	}
 	if len(data.Result) > 0 {
 		ar := ""
 		for i, artist := range data.Result[0].Artists {
