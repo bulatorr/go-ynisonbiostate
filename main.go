@@ -158,7 +158,7 @@ func main() {
 
 // информация о треке
 func trackdata(trackid string) (string, error) {
-	req, err := http.NewRequest("GET", "https://api.music.yandex.ru/tracks/"+trackid, nil)
+	req, err := http.NewRequest("GET", "https://api.music.yandex.net/tracks/"+trackid, nil)
 	if err != nil {
 		return "", err
 	}
