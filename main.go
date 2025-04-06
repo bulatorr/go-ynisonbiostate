@@ -83,9 +83,17 @@ func worker(parent context.Context) {
 				}
 				// Сейчас слушает Сектор Газа: Бомж
 				log.Println(data)
+
+				// получаем актуальное имя пользователя, а не то, что было при запуске программы
+				userdata, err := client.Client.Self(ctx)
+				if err != nil {
+					log.Println("[worker][Self]", err)
+					return
+				}
+
 				_, err = client.Client.API().AccountUpdateProfile(ctx, &tg.AccountUpdateProfileRequest{
-					FirstName: client.Self.FirstName,
-					LastName:  client.Self.LastName,
+					FirstName: userdata.FirstName,
+					LastName:  userdata.LastName,
 					About:     data,
 				})
 				if err != nil {
