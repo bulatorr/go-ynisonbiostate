@@ -223,7 +223,7 @@ type trackresponse struct {
 		FileSize          int    `json:"fileSize"`
 		PreviewDurationMs int    `json:"previewDurationMs"`
 		Artists           []struct {
-			ID        int    `json:"id"`
+			// ID        int    `json:"id"`
 			Name      string `json:"name"`
 			Various   bool   `json:"various"`
 			Composer  bool   `json:"composer"`
