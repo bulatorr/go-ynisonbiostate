@@ -134,8 +134,8 @@ func main() {
 			tls.TLS_RSA_WITH_AES_256_CBC_SHA,
 		},
 	}
-	mTLSConfig.MinVersion = tls.VersionTLS12
-	mTLSConfig.MaxVersion = tls.VersionTLS12
+	mTLSConfig.MinVersion = tls.VersionTLS11
+	mTLSConfig.MaxVersion = tls.VersionTLS13
 
 	tr := &http.Transport{
 		TLSClientConfig: mTLSConfig,
