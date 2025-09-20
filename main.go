@@ -122,6 +122,9 @@ func worker(parent context.Context) {
 	y.OnMessage(func(am ynison.PutYnisonStateResponse) {
 		if len(am.PlayerState.PlayerQueue.PlayableList) > 0 {
 			if trackid != am.PlayerState.PlayerQueue.PlayableList[am.PlayerState.PlayerQueue.CurrentPlayableIndex].PlayableID {
+				// запоминаем текущий трек, чтобы не отправлять 999 одинаковых запросов в минуту
+				trackid = am.PlayerState.PlayerQueue.PlayableList[am.PlayerState.PlayerQueue.CurrentPlayableIndex].PlayableID
+
 				data, err := trackdata(am.PlayerState.PlayerQueue.PlayableList[am.PlayerState.PlayerQueue.CurrentPlayableIndex].PlayableID)
 				if err != nil {
 					log.Println("[worker][trackdata]", err.Error())
@@ -200,9 +203,6 @@ func worker(parent context.Context) {
 				}
 
 				log.Printf("Сейчас играет %s: %s [%s]", data.Artists, data.Title, data.ID)
-
-				// запоминаем текущий трек, чтобы не отправлять 999 одинаковых запросов в минуту
-				trackid = am.PlayerState.PlayerQueue.PlayableList[am.PlayerState.PlayerQueue.CurrentPlayableIndex].PlayableID
 			}
 		}
 	})
